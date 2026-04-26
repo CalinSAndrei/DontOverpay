@@ -5,6 +5,10 @@ import tldextract
 from fastapi import FastAPI, Form
 from typing import Annotated
 import asyncio
+from app.core.setup import ensure_scrapling_installed
+
+
+ensure_scrapling_installed()
 
 app = FastAPI()
 

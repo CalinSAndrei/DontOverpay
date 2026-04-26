@@ -13,7 +13,7 @@ class EmagScraper(BaseScraper):
         try:
             page = StealthyFetcher.fetch(url, headless=True)
 
-            price_element= require(page.find('p', {'class':'product-new-price'}), 'price element')
+            price_element= require(page.find('p', {'data-test':'main-price'}), 'price element')
 
             raw = require(price_element.css('p::text').get(), 'raw')
             

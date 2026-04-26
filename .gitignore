@@ -1,5 +1,4 @@
 .claude
 .venv
-design.md
-_pycache_
+__pycache__
 
