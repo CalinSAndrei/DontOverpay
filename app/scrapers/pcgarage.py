@@ -2,10 +2,6 @@ from .base import BaseScraper
 from scrapling.fetchers import StealthyFetcher
 from .utils import require, parse_price
 
-
-
-
-
 class PcGarageScraper(BaseScraper):
 
 

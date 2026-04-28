@@ -35,4 +35,4 @@ def scrape(url: str):
 
     print(price, name)
 
-    return {"price": price, "product": name}
+    return {"price": price, "product": name, "store": extract_domain(url)}

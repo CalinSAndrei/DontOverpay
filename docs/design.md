@@ -21,8 +21,9 @@
 
 | Layer | Tool | Why |
 |---|---|---|
-| Templating | HTMX + Jinja2 | No JS build step, renders server-side |
-| Charts | Chart.js | Just a script tag, no npm needed |
+| Framework | Next.js | React-based, great DX, easy deployment |
+| Charts | Chart.js | Simple, no extra dependencies |
+| Styling | Tailwind CSS | Utility-first, no build complexity |
 
 ---
 
@@ -54,36 +55,41 @@ The MVP does one thing well: you give it a product URL, it tracks the price over
 ```
 pricehound/
 │
-├── app/
-│   ├── main.py                  # FastAPI app entry point
+├── app/                             # FastAPI backend
+│   ├── main.py                      # FastAPI app entry point, CORS config
 │   │
 │   ├── core/
-│   │   ├── database.py          # SQLite connection, queries, migrations
-│   │   ├── scheduler.py         # APScheduler setup and job registration
-│   │   └── notifier.py          # Telegram notification logic
+│   │   ├── database.py              # SQLite connection, queries, migrations
+│   │   ├── scheduler.py             # APScheduler setup and job registration
+│   │   └── notifier.py              # Telegram notification logic
 │   │
 │   ├── scrapers/
-│   │   ├── base.py              # BaseScraper abstract class
-│   │   ├── registry.py          # Maps domains to scraper classes
+│   │   ├── base.py                  # BaseScraper abstract class
+│   │   ├── registry.py              # Maps domains to scraper classes
 │   │   ├── emag.py
 │   │   ├── pcgarage.py
 │   │   ├── altex.py
 │   │   └── cel.py
 │   │
 │   ├── models/
-│   │   └── schemas.py           # Product, PriceRecord, Alert data models
+│   │   └── schemas.py               # Pydantic models for request/response validation
 │   │
-│   ├── routes/
-│   │   ├── products.py          # Add, remove, view products
-│   │   └── alerts.py            # Set and manage price alerts
-│   │
-│   └── templates/
-│       ├── base.html            # Shared layout
-│       ├── index.html           # Product list dashboard
-│       └── product.html         # Single product page with price history graph
+│   └── routes/
+│       ├── products.py              # Add, remove, list products
+│       └── alerts.py                # Set and manage price alerts
 │
-├── config.yaml                  # Check intervals, Telegram token, active scrapers
-├── Dockerfile
+├── frontend/                        # Next.js frontend
+│   ├── app/
+│   │   ├── page.tsx                 # Product list dashboard
+│   │   └── products/[id]/page.tsx   # Single product page with price history graph
+│   ├── components/
+│   │   ├── ProductCard.tsx
+│   │   └── PriceChart.tsx           # Chart.js wrapper
+│   └── package.json
+│
+├── config.yaml                      # Check intervals, Telegram token, active scrapers
+├── Dockerfile                       # Backend Dockerfile
+├── frontend/Dockerfile              # Frontend Dockerfile
 ├── docker-compose.yml
 └── requirements.txt
 ```
@@ -121,6 +127,24 @@ product_id    INTEGER        -- FK -> products.id
 target_price  REAL           -- notify when price drops below this
 triggered     BOOLEAN        -- avoid repeat notifications
 created_at    TIMESTAMP
+```
+
+---
+
+## API Endpoints
+
+FastAPI exposes a JSON REST API. Next.js fetches from these.
+
+```
+GET    /products           list all tracked products
+POST   /products           add a product by URL
+DELETE /products/{id}      stop tracking a product
+
+GET    /products/{id}/history   full price history for a product
+
+GET    /alerts             list all alerts
+POST   /alerts             create an alert
+DELETE /alerts/{id}        delete an alert
 ```
 
 ---
@@ -179,9 +203,9 @@ Adding a new store means writing one new file and adding one line to the registr
 ## Full Data Flow
 
 ```
-1. User pastes a URL into the web UI
+1. User pastes a URL into the Next.js UI
         |
-2. FastAPI detects the domain, picks the right scraper from registry
+2. POST /products → FastAPI detects the domain, picks the right scraper
         |
 3. Scraper fetches the page, returns name + price
         |
@@ -199,8 +223,27 @@ Adding a new store means writing one new file and adding one line to the registr
    - Fire Telegram notification
    - Mark alert as triggered
         |
-8. Web UI reads price_history and renders Chart.js graph
+8. Next.js fetches GET /products/{id}/history, renders Chart.js graph
 ```
+
+---
+
+## CORS
+
+Next.js runs on a different port (3000) than FastAPI (8000), so CORS must be enabled in `main.py`:
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+In production both services are behind the same domain via a reverse proxy, so CORS becomes a non-issue.
 
 ---
 
@@ -238,7 +281,7 @@ cp config.example.yaml config.yaml
 docker compose up -d
 ```
 
-Open `http://localhost:8000` and start tracking.
+Backend at `http://localhost:8000`, frontend at `http://localhost:3000`.
 
 ---
 
