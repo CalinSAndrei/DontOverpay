@@ -1,6 +1,7 @@
 from platformdirs import user_data_dir
 import os
 import sqlite3
+from types import FunctionType
 
 _default = user_data_dir("DontOverpay","DontOverpay")
 DATA_DIR = os.environ.get("DONTOVERPAY_DATA", _default)
@@ -22,8 +23,6 @@ def init_db():
                 name          TEXT,
                 store         TEXT,
                 currency      TEXT,
-                current_price REAL,
-                last_checked  TIMESTAMP,
                 created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS price_history (
@@ -46,19 +45,53 @@ def add_product(url: str, name: str, store: str, currency: str, price: float):
     with get_conn() as conn: 
         cursor = conn.execute(
             """
-            INSERT INTO products (url, name, store, currency, current_price, last_checked)
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            """, (url, name, store, currency, price),
+            INSERT INTO products (url, name, store, currency)
+            VALUES (?, ?, ?, ?)
+            """, (url, name, store, currency),
         )
 
-        return cursor.lastrowid
+        id = cursor.lastrowid
+
+        conn.execute(
+            """
+            INSERT INTO price_history (product_id, price) VALUES  (?, ?)
+            """, (id , price)
+        )
+
+        return id
     
 def get_product(product_id: int):
     with get_conn() as conn:
-        return conn.execute("SELECT * FROM products WHERE id = ?", (product_id,)).fetchone()
+        return conn.execute("""SELECT * FROM products P JOIN price_history H ON P.id = H.product_id WHERE P.id = ? ORDER BY H.recorded_at DESC""",(product_id,)).fetchone() 
 
 def get_all_products():
     with get_conn() as conn:
-        return conn.execute("SELECT * FROM products ORDER BY created_at DESC").fetchall()
+        return conn.execute("SELECT * FROM products").fetchall()
+
+def update_price_history(scrape_function: FunctionType):
+
+    with get_conn() as conn:
+
+        products = conn.execute("SELECT id, url FROM products ORDER BY id ASC").fetchall()
+
+        for id, url in products:
+
+            product = scrape_function(url)
+
+            conn.execute(
+                """
+                INSERT INTO price_history (product_id, price)  
+                VALUES (?, ?)
+                """, (id, product["price"])
+            )
+
+        return
+
+def get_price_history():
+    with get_conn() as conn:
+        return conn.execute("SELECT * FROM price_history ORDER BY recorded_at ASC").fetchall()
+ 
+
+
 
 
