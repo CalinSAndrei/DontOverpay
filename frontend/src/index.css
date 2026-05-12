@@ -1,0 +1,50 @@
+@import '@fontsource/geist/400.css';
+@import '@fontsource/geist/500.css';
+@import '@fontsource/geist/600.css';
+@import '@fontsource/geist-mono/400.css';
+@import '@fontsource/geist-mono/500.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base:       oklch(5.5% 0.010 195);
+  --bg-surface:    oklch(9%   0.012 193);
+  --bg-elevated:   oklch(13%  0.013 191);
+  --bg-input:      oklch(11%  0.011 192);
+
+  --border-subtle: oklch(20%  0.014 190);
+  --border-accent: oklch(30%  0.040 185);
+
+  --accent:         oklch(72%  0.115 185);
+  --accent-dim:     oklch(56%  0.080 185);
+  --accent-glow:    oklch(72%  0.115 185 / 0.12);
+  --accent-surface: oklch(72%  0.115 185 / 0.07);
+
+  --text-primary:   oklch(90%  0.008 195);
+  --text-secondary: oklch(55%  0.012 192);
+  --text-tertiary:  oklch(35%  0.010 190);
+  --text-accent:    oklch(72%  0.115 185);
+
+  --price-down:    oklch(68%  0.130 155);
+  --price-down-bg: oklch(68%  0.130 155 / 0.08);
+  --price-up:      oklch(65%  0.115 30);
+  --price-up-bg:   oklch(65%  0.115 30  / 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Geist', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }

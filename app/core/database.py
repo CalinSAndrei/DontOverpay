@@ -28,7 +28,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS price_history (
                 id          INTEGER PRIMARY KEY,
                 product_id  INTEGER REFERENCES products(id),
-                price       REAL,
+                price       REAL NOT NULL,
                 recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS alerts (
@@ -40,7 +40,7 @@ def init_db():
             );
         """)
 
-def add_product(url: str, name: str, store: str, currency: str, price: float):
+def insert_product(url: str, name: str, store: str, currency: str, price: float):
 
     with get_conn() as conn: 
         cursor = conn.execute(
@@ -60,15 +60,23 @@ def add_product(url: str, name: str, store: str, currency: str, price: float):
 
         return id
     
-def get_product(product_id: int):
+def select_product(product_id: int):
     with get_conn() as conn:
-        return conn.execute("""SELECT * FROM products P JOIN price_history H ON P.id = H.product_id WHERE P.id = ? ORDER BY H.recorded_at DESC""",(product_id,)).fetchone() 
+        return conn.execute("""SELECT P.*, H.* FROM products P JOIN price_history H ON P.id = H.product_id WHERE P.id = ? ORDER BY H.recorded_at DESC""",(product_id,)).fetchone() 
 
-def get_all_products():
+def select_all_products():
     with get_conn() as conn:
-        return conn.execute("SELECT * FROM products").fetchall()
+        return conn.execute("""
+            SELECT P.*, H.*
+            FROM products P
+            JOIN price_history H ON P.id = H.product_id
+            WHERE H.recorded_at = (
+                SELECT MAX(recorded_at) FROM price_history WHERE product_id = P.id
+            )
+            ORDER BY P.id
+        """).fetchall()
 
-def update_price_history(scrape_function: FunctionType):
+def insert_price_in_price_history(scrape_function: FunctionType):
 
     with get_conn() as conn:
 
@@ -87,7 +95,7 @@ def update_price_history(scrape_function: FunctionType):
 
         return
 
-def get_price_history():
+def select_price_history():
     with get_conn() as conn:
         return conn.execute("SELECT * FROM price_history ORDER BY recorded_at ASC").fetchall()
  

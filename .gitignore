@@ -1,3 +1,13 @@
 .claude
 .venv
 __pycache__
+
+# Frontend (Node.js/npm)
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+.DS_Store
