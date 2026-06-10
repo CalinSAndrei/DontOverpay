@@ -15,7 +15,6 @@ def ensure_scrapling_installed():
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.touch()
 
-
     print("Scrapling install complete.")
 
     return 

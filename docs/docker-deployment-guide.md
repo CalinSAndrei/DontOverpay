@@ -8,13 +8,13 @@ A complete beginner's guide to containerizing this app and making it accessible 
 
 You don't need to finish all of these before continuing, but skim them so the concepts below feel familiar.
 
-| Resource | What it covers |
-|---|---|
-| [Docker — Get Started](https://docs.docker.com/get-started/) | Official intro, covers images, containers, volumes, compose. Read parts 1–5. |
-| [Play with Docker](https://labs.play-with-docker.com/) | Free browser-based Docker playground — experiment without installing anything |
-| [nginx Beginner's Guide](https://nginx.org/en/docs/beginners_guide.html) | Short, official. Explains config blocks, server, location directives |
-| [Docker in 100 seconds](https://www.youtube.com/watch?v=Gjnup-PuquQ) (Fireship, YouTube) | 100-second visual explainer of the core idea |
-| [you need to learn Docker RIGHT NOW](https://www.youtube.com/watch?v=eGz9DS-aIeY) (NetworkChuck, YouTube) | Hands-on beginner walkthrough, ~30 min |
+| Resource                                                                                                  | What it covers                                                                |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [Docker — Get Started](https://docs.docker.com/get-started/)                                              | Official intro, covers images, containers, volumes, compose. Read parts 1–5.  |
+| [Play with Docker](https://labs.play-with-docker.com/)                                                    | Free browser-based Docker playground — experiment without installing anything |
+| [nginx Beginner's Guide](https://nginx.org/en/docs/beginners_guide.html)                                  | Short, official. Explains config blocks, server, location directives          |
+| [Docker in 100 seconds](https://www.youtube.com/watch?v=Gjnup-PuquQ) (Fireship, YouTube)                  | 100-second visual explainer of the core idea                                  |
+| [you need to learn Docker RIGHT NOW](https://www.youtube.com/watch?v=eGz9DS-aIeY) (NetworkChuck, YouTube) | Hands-on beginner walkthrough, ~30 min                                        |
 
 ---
 
@@ -28,13 +28,13 @@ Think of it like a shipping container: the ship (your server/PC) doesn't need to
 
 **Key terms:**
 
-| Term | What it means |
-|---|---|
-| **Image** | The blueprint. A read-only snapshot of your app + dependencies. Like a class in OOP. |
-| **Container** | A running instance of an image. Like an object created from a class. |
-| **Dockerfile** | A text file with instructions to build an image. |
-| **Volume** | A folder that lives outside the container so data persists when the container restarts. |
-| **Network** | A virtual network Docker creates so containers can talk to each other. |
+| Term               | What it means                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| **Image**          | The blueprint. A read-only snapshot of your app + dependencies. Like a class in OOP.       |
+| **Container**      | A running instance of an image. Like an object created from a class.                       |
+| **Dockerfile**     | A text file with instructions to build an image.                                           |
+| **Volume**         | A folder that lives outside the container so data persists when the container restarts.    |
+| **Network**        | A virtual network Docker creates so containers can talk to each other.                     |
 | **docker-compose** | A tool to define and run multiple containers together using one `docker-compose.yml` file. |
 
 ### What is nginx?
@@ -191,28 +191,27 @@ Create `docker-compose.yml` in the project root:
 
 ```yaml
 services:
-
   backend:
-    build: .                        # Build using the Dockerfile in this directory
+    build: . # Build using the Dockerfile in this directory
     environment:
-      - DONTOVERPAY_DATA=/data      # Tell the app where to store the DB
+      - DONTOVERPAY_DATA=/data # Tell the app where to store the DB
     volumes:
-      - db-data:/data               # Mount the volume at /data inside the container
-    restart: unless-stopped         # Auto-restart if the container crashes
+      - db-data:/data # Mount the volume at /data inside the container
+    restart: unless-stopped # Auto-restart if the container crashes
 
   frontend:
-    image: nginx:alpine             # Use the official nginx image (no custom build needed)
+    image: nginx:alpine # Use the official nginx image (no custom build needed)
     ports:
-      - "80:80"                     # Expose port 80 to your LAN
+      - "80:80" # Expose port 80 to your LAN
     volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro   # Mount built React files (read-only)
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro  # Mount nginx config
+      - ./frontend/dist:/usr/share/nginx/html:ro # Mount built React files (read-only)
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro # Mount nginx config
     depends_on:
-      - backend                     # Start backend before frontend
+      - backend # Start backend before frontend
     restart: unless-stopped
 
 volumes:
-  db-data:                          # Named volume — Docker manages this on disk
+  db-data: # Named volume — Docker manages this on disk
 ```
 
 **Understanding the volumes section:**
@@ -222,7 +221,7 @@ volumes:
 - `:ro` means read-only — the container can't write to your source files.
 
 **Understanding `depends_on`:**  
-This tells Docker to start `backend` before `frontend`. Note: it only waits for the container to *start*, not for FastAPI to be fully ready. For this app that's fine since nginx will retry proxied requests.
+This tells Docker to start `backend` before `frontend`. Note: it only waits for the container to _start_, not for FastAPI to be fully ready. For this app that's fine since nginx will retry proxied requests.
 
 ---
 
@@ -286,18 +285,22 @@ This is **local DNS** — your router resolves the name to the IP on your local 
 Most modern routers (especially those running custom firmware) have a "custom DNS" or "local DNS" section.
 
 **For ASUS routers (stock firmware):**
+
 1. Router admin → LAN → DNS Filter or DHCP server
-2. Look for "Custom DNS entries" or check if your model supports it. Many ASUS stock firmware versions do *not* support custom hostnames — if that's the case, use Option B or C.
+2. Look for "Custom DNS entries" or check if your model supports it. Many ASUS stock firmware versions do _not_ support custom hostnames — if that's the case, use Option B or C.
 
 **For routers running OpenWRT:**
+
 1. Network → DHCP and DNS → Hostnames
 2. Add: hostname `pricehound` → IP `192.168.1.100`
 
 **For routers running DD-WRT:**
+
 1. Services → Services → DNSMasq
 2. In "Additional DNSMasq Options" add: `address=/pricehound/192.168.1.100`
 
 **For pfSense / OPNsense:**
+
 1. Services → DNS Resolver → Host Overrides
 2. Add hostname + IP
 
@@ -399,10 +402,10 @@ netstat -ano | findstr :80
 
 ## Troubleshooting
 
-| Problem | Likely cause | Fix |
-|---|---|---|
-| `port 80 is already in use` | IIS or another web server is running | Stop IIS: `iisreset /stop` or change port to `8080:80` in compose |
-| Frontend loads but `/products` returns 502 | Backend not ready yet | Wait a few seconds and refresh; check `docker compose logs backend` |
-| Changes to frontend don't appear | Browser cache | Hard refresh (Ctrl+Shift+R) |
-| Container keeps restarting | App crash | Check `docker compose logs backend` for Python errors |
-| Can't reach from phone | Firewall blocking port 80 | Windows Defender Firewall → Allow an app → add Docker or open port 80 |
+| Problem                                    | Likely cause                         | Fix                                                                   |
+| ------------------------------------------ | ------------------------------------ | --------------------------------------------------------------------- |
+| `port 80 is already in use`                | IIS or another web server is running | Stop IIS: `iisreset /stop` or change port to `8080:80` in compose     |
+| Frontend loads but `/products` returns 502 | Backend not ready yet                | Wait a few seconds and refresh; check `docker compose logs backend`   |
+| Changes to frontend don't appear           | Browser cache                        | Hard refresh (Ctrl+Shift+R)                                           |
+| Container keeps restarting                 | App crash                            | Check `docker compose logs backend` for Python errors                 |
+| Can't reach from phone                     | Firewall blocking port 80            | Windows Defender Firewall → Allow an app → add Docker or open port 80 |
