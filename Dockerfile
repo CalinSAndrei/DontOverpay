@@ -2,16 +2,19 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DONTOVERPAY_DATA=/data
+    DONTOVERPAY_DATA=/data \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=10 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-# pywin32 is Windows-only and cannot be installed in the Linux container.
-RUN sed '/^pywin32==/d' requirements.txt > /tmp/requirements-docker.txt \
-    && pip install --no-cache-dir -r /tmp/requirements-docker.txt \
-    && python -m playwright install --with-deps chromium \
+RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
+
+RUN python -m playwright install --with-deps chromium \
     && mkdir -p /root/.scrapling \
     && touch /root/.scrapling/.installed
 
