@@ -32,7 +32,7 @@ export default function AddForm({ onAdd, onClose }) {
       transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
       className="overflow-hidden"
     >
-      <div className="max-w-5xl mx-auto px-6 pb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
         <div
           className="rounded-3xl p-px"
           style={{ background: 'var(--border-accent)' }}
@@ -52,7 +52,7 @@ export default function AddForm({ onAdd, onClose }) {
             </p>
 
             <form onSubmit={handleSubmit}>
-              <div className="flex gap-3 items-start">
+              <div className="flex flex-col gap-3 items-stretch sm:flex-row sm:items-start">
                 {/* Input */}
                 <div className="flex-1">
                   <div
@@ -96,7 +96,7 @@ export default function AddForm({ onAdd, onClose }) {
                 <button
                   type="submit"
                   disabled={loading || !url.trim()}
-                  className="flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-all duration-200 ease-spring active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed group"
+                  className="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-all duration-200 ease-spring active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed group"
                   style={{
                     background: 'var(--accent)',
                     color: 'var(--bg-base)',

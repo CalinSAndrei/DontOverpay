@@ -1,104 +1,150 @@
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, CaretRight } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, CaretRight, Clock, TrendDown, TrendUp } from '@phosphor-icons/react'
+import { formatPrice } from '../lib/priceInsights'
 
-function formatPrice(price) {
-  if (price == null) return '—'
-  return new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price)
+function Sparkline({ history, tone }) {
+  const prices = history.map((row) => Number(row.price)).filter((price) => Number.isFinite(price)).slice(-14)
+  if (prices.length < 2) {
+    return (
+      <div className="flex h-12 items-center justify-center rounded-2xl" style={{ background: 'var(--bg-input)' }}>
+        <span className="text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--text-tertiary)' }}>
+          Learning
+        </span>
+      </div>
+    )
+  }
+
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const range = max - min || 1
+  const points = prices.map((price, index) => {
+    const x = (index / (prices.length - 1)) * 100
+    const y = 42 - ((price - min) / range) * 34
+    return `${x},${y}`
+  }).join(' ')
+
+  const stroke = tone === 'good' ? 'var(--price-down)' : tone === 'bad' ? 'var(--price-up)' : 'var(--accent)'
+
+  return (
+    <div className="h-12 rounded-2xl px-2 py-1.5" style={{ background: 'var(--bg-input)' }}>
+      <svg viewBox="0 0 100 48" preserveAspectRatio="none" className="h-full w-full overflow-visible">
+        <polyline
+          points={points}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    </div>
+  )
 }
 
-function timeAgo(dateStr) {
-  if (!dateStr) return ''
-  const normalized = dateStr.includes('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z'
-  const diff = (Date.now() - new Date(normalized).getTime()) / 1000
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return `${Math.floor(diff / 86400)}d ago`
-}
-
-export default function ProductCard({ product, index = 0, onSelect }) {
-  const hasDrop = false // delta unavailable in list view; only shown in detail
+export default function ProductCard({ product, insight, index = 0, onSelect }) {
+  const signalColor =
+    insight?.signalTone === 'good'
+      ? 'var(--price-down)'
+      : insight?.signalTone === 'bad'
+        ? 'var(--price-up)'
+        : 'var(--accent)'
+  const signalBg =
+    insight?.signalTone === 'good'
+      ? 'var(--price-down-bg)'
+      : insight?.signalTone === 'bad'
+        ? 'var(--price-up-bg)'
+        : 'var(--accent-surface)'
+  const TrendIcon = insight?.trend === 'down' ? TrendDown : insight?.trend === 'up' ? TrendUp : Clock
+  const trendLabel =
+    insight?.deltaFromPrevious == null
+      ? 'No previous'
+      : `${insight.deltaFromPrevious > 0 ? '+' : ''}${formatPrice(insight.deltaFromPrevious)}`
 
   return (
     <motion.div
       layoutId={`card-${product.id}`}
       initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      transition={{ duration: 0.5, delay: index * 0.06, ease: [0.32, 0.72, 0, 1] }}
-      style={{ marginLeft: `${Math.min(index * 6, 24)}px` }}
+      transition={{ duration: 0.5, delay: Math.min(index * 0.045, 0.28), ease: [0.32, 0.72, 0, 1] }}
       className="group cursor-pointer"
       onClick={() => onSelect(product.id)}
       whileHover={{ x: 3 }}
       whileTap={{ scale: 0.99 }}
     >
-      {/* Outer shell */}
       <div
         className="rounded-3xl p-px transition-all duration-300"
-        style={{
-          background: 'var(--border-subtle)',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border-accent)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--border-subtle)')}
+        style={{ background: insight?.signalTone === 'good' ? 'var(--border-accent)' : 'var(--border-subtle)' }}
       >
-        {/* Inner core */}
         <div
-          className="rounded-[calc(1.5rem-1px)] px-6 py-5 transition-all duration-300"
+          className="rounded-[calc(1.5rem-1px)] px-4 py-4 transition-all duration-300 sm:px-5"
           style={{
             background: 'var(--bg-surface)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-surface)')}
         >
-          <div className="flex items-center gap-4">
-            {/* Left: name + store */}
-            <div className="flex-1 min-w-0">
-              <p
-                className="text-sm font-medium leading-snug mb-1 truncate"
-                style={{ color: 'var(--text-primary)' }}
-              >
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px_180px] xl:items-center">
+            <div className="min-w-0">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span
+                  className="rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] font-medium"
+                  style={{ background: signalBg, color: signalColor }}
+                >
+                  {insight?.signal || 'Learning'}
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--text-tertiary)' }}>
+                  {product.store || 'Store'}
+                </span>
+                {insight?.stale && (
+                  <span className="text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--price-up)' }}>
+                    Stale
+                  </span>
+                )}
+              </div>
+
+              <p className="truncate text-base font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
                 {product.name || 'Unknown product'}
               </p>
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-[10px] uppercase tracking-[0.12em] font-medium"
-                  style={{ color: 'var(--text-accent)' }}
-                >
-                  {product.store}
+
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                <span className="inline-flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  <Clock weight="light" size={14} />
+                  {insight?.updatedAgo || 'No scrape yet'}
                 </span>
-                {product.recorded_at && (
-                  <>
-                    <span style={{ color: 'var(--border-subtle)' }}>·</span>
-                    <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                      {timeAgo(product.recorded_at)}
-                    </span>
-                  </>
-                )}
+                <span className="inline-flex items-center gap-1.5 font-mono tabular-nums" style={{ color: signalColor }}>
+                  <TrendIcon weight="light" size={14} />
+                  {trendLabel}
+                </span>
               </div>
             </div>
 
-            {/* Right: price + arrow */}
-            <div className="flex items-center gap-4 shrink-0">
-              <div className="text-right">
-                <p
-                  className="text-base font-medium tabular-nums font-mono leading-none mb-1"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {formatPrice(product.price)}
+            <Sparkline history={insight?.history || []} tone={insight?.signalTone} />
+
+            <div className="flex items-end justify-between gap-4 xl:items-center xl:justify-end">
+              <div className="text-left xl:text-right">
+                <p className="font-mono text-xl font-semibold tabular-nums leading-none" style={{ color: 'var(--text-primary)' }}>
+                  {formatPrice(insight?.currentPrice ?? product.price)}
                 </p>
-                <p className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-                  {product.currency || 'Lei'}
+                <p className="mt-1 text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
+                  {insight?.currency || product.currency || 'Lei'}
                 </p>
               </div>
 
               <div
-                className="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 group-hover:translate-x-0.5"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all duration-200 group-hover:translate-x-0.5"
                 style={{
                   background: 'var(--bg-input)',
-                  color: 'var(--text-tertiary)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-subtle)',
                 }}
               >
-                <CaretRight weight="light" size={14} />
+                {insight?.trend === 'down' ? (
+                  <ArrowDown weight="light" size={17} style={{ color: 'var(--price-down)' }} />
+                ) : insight?.trend === 'up' ? (
+                  <ArrowUp weight="light" size={17} style={{ color: 'var(--price-up)' }} />
+                ) : (
+                  <CaretRight weight="light" size={17} />
+                )}
               </div>
             </div>
           </div>

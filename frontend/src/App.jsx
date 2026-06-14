@@ -1,60 +1,85 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Nav from './components/Nav'
 import ProductList from './components/ProductList'
 import ProductDetail from './components/ProductDetail'
 import AddForm from './components/AddForm'
-import { fetchProducts, triggerUpdate } from './api'
+import { fetchProducts, fetchPriceHistory, triggerUpdate } from './api'
+import { buildDashboardInsights } from './lib/priceInsights'
 
 export default function App() {
   const [products, setProducts] = useState([])
+  const [priceHistory, setPriceHistory] = useState([])
   const [loading, setLoading] = useState(true)
+  const [historyLoading, setHistoryLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
-  const loadProducts = useCallback(async () => {
+  const loadDashboard = useCallback(async () => {
+    setHistoryLoading(true)
     try {
-      const data = await fetchProducts()
-      setProducts(Array.isArray(data) ? data : [])
+      const [productResult, historyResult] = await Promise.allSettled([
+        fetchProducts(),
+        fetchPriceHistory(),
+      ])
+
+      if (productResult.status === 'rejected') {
+        throw productResult.reason
+      }
+
+      setProducts(Array.isArray(productResult.value) ? productResult.value : [])
       setError(null)
+
+      if (historyResult.status === 'fulfilled') {
+        setPriceHistory(Array.isArray(historyResult.value) ? historyResult.value : [])
+      } else {
+        setPriceHistory([])
+      }
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
+      setHistoryLoading(false)
     }
   }, [])
 
-  useEffect(() => { loadProducts() }, [loadProducts])
+  useEffect(() => { loadDashboard() }, [loadDashboard])
 
   const handleAddProduct = useCallback(async () => {
-    await loadProducts()
+    await loadDashboard()
     setShowAdd(false)
-  }, [loadProducts])
+  }, [loadDashboard])
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
     try {
       await triggerUpdate()
-      await loadProducts()
     } catch {
-      /* silently reload anyway */
-      await loadProducts()
+      // The update endpoint can fail per store; always reload the latest saved state.
     } finally {
+      await loadDashboard()
       setRefreshing(false)
     }
-  }, [loadProducts])
+  }, [loadDashboard])
 
-  const selectedProduct = products.find((p) => p.id === selectedId) ?? null
+  const dashboard = useMemo(
+    () => buildDashboardInsights(products, priceHistory),
+    [products, priceHistory],
+  )
+  const selectedProduct = products.find((product) => product.id === selectedId) ?? null
+  const selectedInsight = dashboard.productInsights.find(({ product }) => product.id === selectedId)?.insight ?? null
 
   return (
-    <div className="min-h-[100dvh]" style={{ background: 'var(--bg-base)' }}>
+    <div className="app-shell min-h-[100dvh]">
       <Nav
-        onAddClick={() => setShowAdd((v) => !v)}
+        onAddClick={() => setShowAdd((value) => !value)}
         onRefresh={handleRefresh}
         refreshing={refreshing}
         addOpen={showAdd}
+        productCount={products.length}
+        buyZoneCount={dashboard.buyZoneProducts.length}
       />
 
       <AnimatePresence>
@@ -67,7 +92,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-5xl mx-auto px-6 pb-24">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <AnimatePresence mode="wait">
           {selectedId ? (
             <motion.div
@@ -80,6 +105,8 @@ export default function App() {
               <ProductDetail
                 product={selectedProduct}
                 productId={selectedId}
+                insight={selectedInsight}
+                historyLoading={historyLoading}
                 onBack={() => setSelectedId(null)}
               />
             </motion.div>
@@ -93,9 +120,12 @@ export default function App() {
             >
               <ProductList
                 products={products}
+                dashboard={dashboard}
                 loading={loading}
+                historyLoading={historyLoading}
                 error={error}
                 onSelect={setSelectedId}
+                onAddClick={() => setShowAdd(true)}
               />
             </motion.div>
           )}
