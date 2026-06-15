@@ -1,6 +1,7 @@
 from app.core.database import insert_price_history, insert_product, select_all_products, select_product, get_conn, select_all_products_with_price, select_price_history, insert_log, select_logs as select_logs
 from app.scrapers.registry import scrape
 from app.scrapers.utils import require
+from app.core.errors import AppException
 
 
 def add_product(url: str): 
@@ -26,8 +27,10 @@ def update_all_price_history():
     with get_conn() as conn:
 
         products = select_all_products(conn)
+        results = []
 
         for product in products:
+
 
             try:
                 
@@ -39,10 +42,12 @@ def update_all_price_history():
 
                 insert_price_history(conn, id, scraped["price"])
 
-                return     
+                results.append((scraped["name"],scraped["price"]))
 
             except Exception as e:
-                return
+                raise AppException("logic.py", 500, "Something failed while updating price history")
+            
+        return results
     
 def get_all_price_history():
 

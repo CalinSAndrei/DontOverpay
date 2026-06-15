@@ -24,9 +24,9 @@ async def fetch_price_history():
 @router.get("/updatehistory")
 async def update_history():
 
-    await asyncio.to_thread (update_all_price_history)
+    update = await asyncio.to_thread(update_all_price_history)
 
-    return {"status": "updated"}
+    return update
 
 @router.post("/add/")
 async def add(url: Annotated[str, Form()]):
